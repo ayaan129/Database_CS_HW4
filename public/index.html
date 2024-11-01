@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Management Dashboard</title>
+    <style>
+        .table-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 45%;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+            width: 45%;
+        }
+    </style>
+    <script>
+        // CRUD operations for Customers
+        async function fetchCustomers() {
+            const response = await fetch('http://localhost:3000/customers');
+            const customers = await response.json();
+            const table = document.getElementById('customerTable');
+            table.innerHTML = '';
+            customers.forEach(customer => {
+                const row = `<tr>
+                                <td>${customer.customer_id}</td>
+                                <td>${customer.name}</td>
+                                <td>${customer.number}</td>
+                                <td>${customer.email}</td>
+                                <td>${customer.address}</td>
+                                <td>${customer.bank_account_id}</td>
+                             </tr>`;
+                table.innerHTML += row;
+            });
+        }
+
+        async function addCustomer() {
+            const name = document.getElementById('customerName').value;
+            const number = document.getElementById('customerNumber').value;
+            const email = document.getElementById('customerEmail').value;
+            const address = document.getElementById('customerAddress').value;
+            const bank_account_id = document.getElementById('customerBankAccount').value;
+
+            await fetch('http://localhost:3000/customers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, number, email, address, bank_account_id })
+            });
+            fetchCustomers();
+            clearCustomerForm();
+        }
+
+        async function updateCustomer() {
+            const id = document.getElementById('customerIdUpdate').value;
+            const name = document.getElementById('newCustomerName').value;
+            const number = document.getElementById('newCustomerNumber').value;
+            const email = document.getElementById('newCustomerEmail').value;
+            const address = document.getElementById('newCustomerAddress').value;
+            const bank_account_id = document.getElementById('newCustomerBankAccount').value;
+
+            await fetch(`http://localhost:3000/customers/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, number, email, address, bank_account_id })
+            });
+            fetchCustomers();
+            clearCustomerUpdateForm();
+        }
+
+        async function deleteCustomer() {
+            const id = document.getElementById('customerIdDelete').value;
+            await fetch(`http://localhost:3000/customers/${id}`, { method: 'DELETE' });
+            fetchCustomers();
+            clearCustomerDeleteForm();
+        }
+
+        // CRUD operations for Phone Plans
+        async function fetchPhonePlans() {
+            const response = await fetch('http://localhost:3000/phone-plans');
+            const phonePlans = await response.json();
+            const table = document.getElementById('phonePlanTable');
+            table.innerHTML = '';
+            phonePlans.forEach(plan => {
+                const row = `<tr>
+                                <td>${plan.phone_plan_id}</td>
+                                <td>${plan.customer_id}</td>
+                                <td>${plan.plan_type}</td>
+                                <td>${plan.monthly_charge}</td>
+                                <td>${plan.data_limit}</td>
+                                <td>${plan.talk_time}</td>
+                             </tr>`;
+                table.innerHTML += row;
+            });
+        }
+
+        async function addPhonePlan() {
+            const customer_id = document.getElementById('phonePlanCustomerId').value;
+            const plan_type = document.getElementById('phonePlanType').value;
+            const monthly_charge = document.getElementById('phonePlanCharge').value;
+            const data_limit = document.getElementById('phonePlanDataLimit').value;
+            const talk_time = document.getElementById('phonePlanTalkTime').value;
+
+            await fetch('http://localhost:3000/phone-plans', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customer_id, plan_type, monthly_charge, data_limit, talk_time })
+            });
+            fetchPhonePlans();
+            clearPhonePlanForm();
+        }
+
+        // Add similar CRUD functions for Call Records, Bills, and Payments
+
+        // Utility functions to clear forms
+        function clearCustomerForm() {
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerNumber').value = '';
+            document.getElementById('customerEmail').value = '';
+            document.getElementById('customerAddress').value = '';
+            document.getElementById('customerBankAccount').value = '';
+        }
+
+        function clearCustomerUpdateForm() {
+            document.getElementById('customerIdUpdate').value = '';
+            document.getElementById('newCustomerName').value = '';
+            document.getElementById('newCustomerNumber').value = '';
+            document.getElementById('newCustomerEmail').value = '';
+            document.getElementById('newCustomerAddress').value = '';
+            document.getElementById('newCustomerBankAccount').value = '';
+        }
+
+        function clearCustomerDeleteForm() {
+            document.getElementById('customerIdDelete').value = '';
+        }
+
+        window.onload = function() {
+            fetchCustomers();
+            fetchPhonePlans();
+            // Fetch other data
+        };
+    </script>
+</head>
+<body>
+
+    <h1>Customer Management Dashboard</h1>
+
+    <div class="table-container">
+        <!-- Customer List Table -->
+        <div>
+            <h2>Customer List</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Number</th>
+                        <th>Email</th>
+                        <th>Address</th>
+                        <th>Bank Account ID</th>
+                    </tr>
+                </thead>
+                <tbody id="customerTable"></tbody>
+            </table>
+        </div>
+
+        <!-- Phone Plan List Table -->
+        <div>
+            <h2>Phone Plan List</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Plan ID</th>
+                        <th>Customer ID</th>
+                        <th>Type</th>
+                        <th>Monthly Charge</th>
+                        <th>Data Limit</th>
+                        <th>Talk Time</th>
+                    </tr>
+                </thead>
+                <tbody id="phonePlanTable"></tbody>
+            </table>
+        </div>
+
+        <!-- Add sections for Call Records, Bills, Payments similarly -->
+    </div>
+
+    <!-- Customer CRUD Forms -->
+    <div class="form-container">
+        <h2>Add Customer</h2>
+        <input type="text" id="customerName" placeholder="Name">
+        <input type="text" id="customerNumber" placeholder="Number">
+        <input type="email" id="customerEmail" placeholder="Email">
+        <input type="text" id="customerAddress" placeholder="Address">
+        <input type="text" id="customerBankAccount" placeholder="Bank Account ID">
+        <button onclick="addCustomer()">Add Customer</button>
+
+        <h2>Update Customer</h2>
+        <input type="number" id="customerIdUpdate" placeholder="Customer ID">
+        <input type="text" id="newCustomerName" placeholder="New Name">
+        <input type="text" id="newCustomerNumber" placeholder="New Number">
+        <input type="email" id="newCustomerEmail" placeholder="New Email">
+        <input type="text" id="newCustomerAddress" placeholder="New Address">
+        <input type="text" id="newCustomerBankAccount" placeholder="New Bank Account ID">
+        <button onclick="updateCustomer()">Update Customer</button>
+
+        <h2>Delete Customer</h2>
+        <input type="number" id="customerIdDelete" placeholder="Customer ID">
+        <button onclick="deleteCustomer()">Delete Customer</button>
+    </div>
+
+    <!-- Phone Plan CRUD Forms -->
+    <div class="form-container">
+        <h2>Add Phone Plan</h2>
+        <input type="number" id="phonePlanCustomerId" placeholder="Customer ID">
+        <input type="text" id="phonePlanType" placeholder="Plan Type">
+        <input type="number" id="phonePlanCharge" placeholder="Monthly Charge">
+        <input type="number" id="phonePlanDataLimit" placeholder="Data Limit">
+        <input type="number" id="phonePlanTalkTime" placeholder="Talk Time">
+        <button onclick="addPhonePlan()">Add Phone Plan</button>
+
+        <!-- Add Update and Delete forms similarly -->
+    </div>
+
+    <!-- Add forms for Call Records, Bills, Payments similarly -->
+
+</body>
+</html>

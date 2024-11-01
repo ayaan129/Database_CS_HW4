@@ -1,4 +1,4 @@
-# Instructions to Run the Server
+# Instructions to Run the JS Web Server
 
 1. Install the necessary dependencies:
     ```

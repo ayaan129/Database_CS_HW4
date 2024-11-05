@@ -24,210 +24,126 @@ const pool = new Pool({
 // Utility function for querying the database
 const query = (text, params) => pool.query(text, params);
 
-/*
-    Initialize and Populate Database
-*/
+// Utility function to execute SQL files
+const executeSQLFile = async (filePath) => {
+    const sql = fs.readFileSync(filePath, 'utf8');
+    return pool.query(sql);
+};
 
-// Initialize Database (Run the SQL script to create tables)
-app.post('/init-db', async (req, res) => {
+// Create tables route
+app.get('/create-tables', async (req, res) => {
     try {
-        const sqlFilePath = path.join(__dirname, 'db', 'init.sql');
-        const sql = fs.readFileSync(sqlFilePath, 'utf-8');
-        await pool.query(sql);
-        res.status(200).send('Database initialized successfully.');
-    } catch (err) {
-        console.error('Error initializing database:', err.message);
-        res.status(500).send('Failed to initialize the database.');
+        await executeSQLFile(path.join(__dirname, 'sql', 'create_tables.sql'));
+        res.json({ message: "Tables created successfully!" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error creating tables.", error: error.message });
     }
 });
 
-// Populate Database with Sample Data (Assuming you have a populate.sql script)
-app.post('/populate', async (req, res) => {
+// Populate data route
+app.get('/populate-data', async (req, res) => {
     try {
-        const sqlFilePath = path.join(__dirname, 'db', 'populate.sql');
-        const sql = fs.readFileSync(sqlFilePath, 'utf-8');
-        await pool.query(sql);
-        res.status(200).send('Database populated successfully.');
-    } catch (err) {
-        console.error('Error populating database:', err.message);
-        res.status(500).send('Failed to populate the database.');
+        await executeSQLFile(path.join(__dirname, 'sql', 'populate_data.sql'));
+        res.json({ message: "Data populated successfully!" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error populating data.", error: error.message });
     }
 });
 
-/*
-    CRUD Operations for Phone Plans
-*/
-
-// Fetch all phone plans
-app.get('/phone_plans', async (req, res) => {
+// Delete data route
+app.get('/delete-data', async (req, res) => {
     try {
-        const result = await query('SELECT * FROM phone_plan ORDER BY phone_plan_id');
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching phone plans:', err.message);
-        res.sendStatus(500);
+        await executeSQLFile(path.join(__dirname, 'sql', 'delete_data.sql'));
+        res.json({ message: "Data deleted successfully!" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error deleting data.", error: error.message });
     }
 });
 
-
-/*
-    CRUD Operations for Bank Accounts
-*/
-
-// Fetch all bank accounts
-app.get('/bank_accounts', async (req, res) => {
+// View records route
+app.get('/view-records', async (req, res) => {
     try {
-        const result = await query('SELECT * FROM bank_account ORDER BY bank_account_id');
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching bank accounts:', err.message);
-        res.sendStatus(500);
+        const filePath = path.join(__dirname, 'sql', 'view_records.sql');
+        const result = await executeSQLFile(filePath);
+        res.json({ records: result.rows });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error fetching records.", error: error.message });
     }
 });
 
-
-
-/*
-    CRUD Operations for Customers
-*/
-
-// Fetch all customers
-app.get('/customers', async (req, res) => {
+// Run transaction route
+app.get('/run-transaction', async (req, res) => {
     try {
-        const result = await query(`
-            SELECT 
-                c.*, 
-                pp.plan_type, 
-                pp.monthly_charge, 
-                pp.data_limit, 
-                pp.talk_time,
-                ba.bank_name, 
-                ba.account_number, 
-                ba.routing_number, 
-                ba.balance
-            FROM customer c
-            JOIN phone_plan pp ON c.phone_plan_id = pp.phone_plan_id
-            JOIN bank_account ba ON c.bank_account_id = ba.bank_account_id
-            ORDER BY c.customer_id
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching customers:', err.message);
-        res.sendStatus(500);
+        const filePath = path.join(__dirname, 'sql', 'transaction.sql');
+        await executeSQLFile(filePath);
+        res.json({ message: "Transaction executed successfully!" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error executing transaction.", error: error.message });
     }
 });
 
-// Fetch a single customer by ID
-app.get('/customer/:id', async (req, res) => {
-    const { id } = req.params;
+// Billing summary route
+app.get('/billing-summary', async (req, res) => {
     try {
-        const result = await query(`
-            SELECT 
-                c.*, 
-                pp.plan_type, 
-                pp.monthly_charge, 
-                pp.data_limit, 
-                pp.talk_time,
-                ba.bank_name, 
-                ba.account_number, 
-                ba.routing_number, 
-                ba.balance
-            FROM customer c
-            JOIN phone_plan pp ON c.phone_plan_id = pp.phone_plan_id
-            JOIN bank_account ba ON c.bank_account_id = ba.bank_account_id
-            WHERE c.customer_id = $1
-        `, [id]);
+        const filePath = path.join(__dirname, 'sql', 'billing_summary.sql');
+        const result = await executeSQLFile(filePath);
+        res.json({ records: result.rows });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error fetching billing summary.", error: error.message });
+    }
+});
+
+// Total call time for all customers route
+app.get('/total-call-time-all', async (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'sql', 'total_call_time_all.sql');
+        const result = await executeSQLFile(filePath);
 
         if (result.rows.length === 0) {
-            return res.status(404).send('Customer not found.');
+            res.json({ message: "No call records found for any customer." });
+        } else {
+            res.json({ records: result.rows });
         }
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error('Error fetching customer:', err.message);
-        res.sendStatus(500);
+    } catch (error) {
+        console.error('Error fetching total call time for all customers:', error);
+        res.status(500).json({ message: "Error fetching total call time.", error: error.message });
     }
 });
 
-/*
-    CRUD Operations for Call Records
-*/
-
-// Fetch all call records
-app.get('/call_records', async (req, res) => {
+// High data usage route
+app.get('/high-data-usage', async (req, res) => {
     try {
-        const result = await query(`
-            SELECT 
-                cr.*, 
-                c.name AS customer_name, 
-                c.phone_number
-            FROM call_record cr
-            JOIN customer c ON cr.customer_id = c.customer_id
-            ORDER BY cr.call_id
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching call records:', err.message);
-        res.sendStatus(500);
+        const filePath = path.join(__dirname, 'sql', 'high_data_usage.sql');
+        const result = await executeSQLFile(filePath);
+        console.log('High Data Usage Query Result:', result);
+        console.log('High Data Usage Records:', result.rows);
+        res.json({ records: result.rows });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error fetching high data usage customers.", error: error.message });
     }
 });
 
-
-
-/*
-    CRUD Operations for Bills
-*/
-
-// Fetch all bills
-app.get('/bills', async (req, res) => {
+// Payment history route
+app.get('/payment-history', async (req, res) => {
     try {
-        const result = await query(`
-            SELECT 
-                b.*, 
-                c.name AS customer_name, 
-                c.email, 
-                c.phone_number
-            FROM bill b
-            JOIN customer c ON b.customer_id = c.customer_id
-            ORDER BY b.bill_id
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching bills:', err.message);
-        res.sendStatus(500);
+        const filePath = path.join(__dirname, 'sql', 'payment_history.sql');
+        const result = await executeSQLFile(filePath);
+        res.json({ records: result.rows });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error fetching payment history.", error: error.message });
     }
 });
-
-/*
-    CRUD Operations for Payments
-*/
-
-// Fetch all payments
-app.get('/payments', async (req, res) => {
-    try {
-        const result = await query(`
-            SELECT 
-                p.*, 
-                b.bill_date, 
-                b.total_amount, 
-                ba.bank_name, 
-                ba.account_number
-            FROM payment p
-            JOIN bill b ON p.bill_id = b.bill_id
-            JOIN bank_account ba ON p.bank_account_id = ba.bank_account_id
-            ORDER BY p.payment_id
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching payments:', err.message);
-        res.sendStatus(500);
-    }
-});
-
-/*
-    Start the Server
-*/
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });

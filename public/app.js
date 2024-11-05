@@ -56,13 +56,7 @@ function billingSummary() {
 
 function totalCallTime(){fetch('/total-call-time-all')
         .then(response => response.json())
-        .then(data => displayData(data.records, 'High Data Usage Report'));
-}
-
-function highDataUsage() {
-    fetch('/high-data-usage')
-        .then(response => response.json())
-        .then(data => displayData(data.records, 'High Data Usage Report'));
+        .then(data => displayData(data.records, 'Total Call Time Report'));
 }
 
 function paymentHistory() {

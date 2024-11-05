@@ -8,7 +8,7 @@ SELECT
     p.plan_type,
     p.monthly_charge,
     p.data_limit,
-    p.talk_time,
+    p.talk_limit,
     b.bank_name,
     b.account_number
 FROM customer c

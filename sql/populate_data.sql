@@ -3,7 +3,7 @@ BEGIN;
 
 
 -- Insert data into phone_plan
-INSERT INTO phone_plan (phone_plan_id, plan_type, monthly_charge, data_limit, talk_time) VALUES
+INSERT INTO phone_plan (phone_plan_id, plan_type, monthly_charge, data_limit, talk_limit) VALUES
 (1, 'Basic',    19.99, 1000,  500),
 (2, 'Standard', 29.99, 3000, 1500),
 (3, 'Premium',  49.99, 7000, 3500),
@@ -42,7 +42,7 @@ INSERT INTO customer (customer_id, name, phone_number, email, address, phone_pla
 (10,'Jack Anderson',    '555-0110', 'jack.anderson@example.com', '159 Walnut St, Springfield',10,10);
 
 -- Insert data into call_record
-INSERT INTO call_record (call_id, call_time, call_duration, call_data, cost, customer_id) VALUES
+INSERT INTO call_record (call_id, call_time, call_duration, call_data_usage, cost, customer_id) VALUES
 (1,  '2024-04-01 08:30:00',  300, 50, 2.50, 1),
 (2,  '2024-04-02 09:15:00',  200, 30, 1.75, 2),
 (3,  '2024-04-03 10:45:00',  600, 80, 4.00, 3),

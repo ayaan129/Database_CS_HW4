@@ -21,9 +21,6 @@ const pool = new Pool({
     port: 5432,
 });
 
-// Utility function for querying the database
-const query = (text, params) => pool.query(text, params);
-
 // Utility function to execute SQL files
 const executeSQLFile = async (filePath) => {
     const sql = fs.readFileSync(filePath, 'utf8');

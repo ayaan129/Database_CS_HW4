@@ -13,6 +13,10 @@ npm install
 node server.js
 ```
 
+## Trace Folder
+Folder containing two file: transaction.sql & query.sql
+transaction.sql show the code for the transaction query
+query.sql show the code that our server SQL query runs on
 
 ### ER Diagram
 

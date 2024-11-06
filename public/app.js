@@ -66,41 +66,11 @@ function paymentHistory() {
 }
 
 function displayData(records, title = 'Records') {
-    let output = `
-        <style>
-            .data-table {
-                border-collapse: collapse;
-                width: 100%;
-                margin: 20px 0;
-                font-family: Arial, sans-serif;
-            }
-            .data-table th {
-                background-color: #4CAF50;
-                color: white;
-                padding: 12px;
-                text-align: left;
-            }
-            .data-table td {
-                padding: 8px;
-                border-bottom: 1px solid #ddd;
-            }
-            .data-table tr:nth-child(even) {
-                background-color: #f2f2f2;
-            }
-            .data-table tr:hover {
-                background-color: #ddd;
-            }
-            .table-caption {
-                font-size: 1.2em;
-                font-weight: bold;
-                margin-bottom: 10px;
-            }
-        </style>
-        <div class="table-caption">${title}</div>
-    `;
+     let output = `<div class="table-caption">${title}</div>`;
 
     if (records.length > 0) {
         output += '<table class="data-table"><tr>';
+        
         
         // Headers
         for (let key in records[0]) {

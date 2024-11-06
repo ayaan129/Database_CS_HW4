@@ -116,19 +116,6 @@ app.get('/total-call-time-all', async (req, res) => {
     }
 });
 
-// High data usage route
-app.get('/high-data-usage', async (req, res) => {
-    try {
-        const filePath = path.join(__dirname, 'sql', 'high_data_usage.sql');
-        const result = await executeSQLFile(filePath);
-        console.log('High Data Usage Query Result:', result);
-        console.log('High Data Usage Records:', result.rows);
-        res.json({ records: result.rows });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error fetching high data usage customers.", error: error.message });
-    }
-});
 
 // Payment history route
 app.get('/payment-history', async (req, res) => {

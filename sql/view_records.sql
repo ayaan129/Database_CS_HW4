@@ -1,4 +1,3 @@
--- sql/view_records.sql
 SELECT 
     c.customer_id,
     c.name,

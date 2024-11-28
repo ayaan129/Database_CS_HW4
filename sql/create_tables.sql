@@ -13,22 +13,22 @@ DROP TABLE IF EXISTS phone_plan CASCADE;
 CREATE SEQUENCE IF NOT EXISTS phone_plan_id_seq START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE IF NOT EXISTS bank_account_id_seq START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE IF NOT EXISTS customer_id_seq START WITH 1 INCREMENT BY 1;
-CREATE SEQUENCE IF NOT EXISTS call_record_id_seq START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE IF NOT EXISTS bill_id_seq START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE IF NOT EXISTS payment_id_seq START WITH 1 INCREMENT BY 1;
 
 -- Phone Plan Table
 CREATE TABLE phone_plan (
-    phone_plan_id INT PRIMARY KEY,
+    phone_plan_id INT PRIMARY KEY DEFAULT NEXTVAL('phone_plan_id_seq'),
     plan_type VARCHAR(50) NOT NULL,
     monthly_charge DECIMAL(10, 2) NOT NULL,
     data_limit INT NOT NULL,
-    talk_limit INT NOT NULL
+    talk_limit INT NULL
 );
 
 -- Bank Account Table
 CREATE TABLE bank_account (
-    bank_account_id INT PRIMARY KEY,
+    bank_account_id INT PRIMARY KEY DEFAULT NEXTVAL('bank_account_id_seq'),
+    account_holder_name VARCHAR(255) NOT NULL,
     bank_name VARCHAR(255) NOT NULL,
     account_number VARCHAR(50) NOT NULL,
     routing_number VARCHAR(50) NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE bank_account (
 
 -- Customer Table
 CREATE TABLE customer (
-    customer_id INT PRIMARY KEY,
+    customer_id INT PRIMARY KEY DEFAULT NEXTVAL('customer_id_seq'),
     name VARCHAR(255) NOT NULL,
     phone_number VARCHAR(12) NOT NULL,
     email VARCHAR(255),
@@ -50,18 +50,19 @@ CREATE TABLE customer (
 
 -- Call Record Table
 CREATE TABLE call_record (
-    call_id INT PRIMARY KEY,
-    call_time TIMESTAMP NOT NULL,
+    call_start_time TIMESTAMP NOT NULL,
+    call_end_time TIMESTAMP NOT NULL,
     call_duration INT NOT NULL,
-    call_data_usage INT NOT NULL,
+    data_usage INT NOT NULL,
     cost DECIMAL(10, 2) NOT NULL,
     customer_id INT NOT NULL,
+    PRIMARY KEY (customer_id, call_start_time),
     FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
 );
 
 -- Bill Table
 CREATE TABLE bill (
-    bill_id INT PRIMARY KEY,
+    bill_id INT PRIMARY KEY DEFAULT NEXTVAL('bill_id_seq'),
     bill_date DATE NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
     due_date DATE NOT NULL,
@@ -72,7 +73,7 @@ CREATE TABLE bill (
 
 -- Payment Table
 CREATE TABLE payment (
-    payment_id INT PRIMARY KEY,
+    payment_id INT PRIMARY KEY DEFAULT NEXTVAL('payment_id_seq'),
     payment_method VARCHAR(50) NOT NULL,
     payment_type VARCHAR(50) NOT NULL,
     payment_date DATE NOT NULL,

@@ -22,7 +22,7 @@ CREATE TABLE phone_plan (
     plan_type VARCHAR(50) NOT NULL,
     monthly_charge DECIMAL(10, 2) NOT NULL,
     data_limit INT NOT NULL,
-    talk_limit INT NULL
+    talk_limit INT NOT NULL
 );
 
 -- Bank Account Table

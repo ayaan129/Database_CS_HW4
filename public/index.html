@@ -8,6 +8,45 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <!-- Favicon (Optional) -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        /* Message Styles */
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background-color: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+
+        .transaction-details {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+
+        .transaction-details p {
+            margin: 5px 0;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -33,10 +72,6 @@
                     <span class="btn-icon">📂</span>
                     <span class="btn-text">View Records</span>
                 </button>
-                <button class="dashboard-btn" id="runTransactionBtn">
-                    <span class="btn-icon">🔄</span>
-                    <span class="btn-text">Run Transaction</span>
-                </button>
                 <button class="dashboard-btn" id="billingSummaryBtn">
                     <span class="btn-icon">💳</span>
                     <span class="btn-text">Billing Summary</span>
@@ -44,6 +79,14 @@
                 <button class="dashboard-btn" id="dataUsageBtn">
                     <span class="btn-icon">📊</span>
                     <span class="btn-text">Total Call Time</span>
+                </button>
+                <button class="dashboard-btn" id="processTransactionBtn">
+                    <span class="btn-icon">💳</span>
+                    <span class="btn-text">Process Transaction</span>
+                </button>
+                <button class="dashboard-btn" id="simulateTransactionsBtn">
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">Simulate Transactions</span>
                 </button>
                 <button class="dashboard-btn" id="paymentHistoryBtn">
                     <span class="btn-icon">📅</span>

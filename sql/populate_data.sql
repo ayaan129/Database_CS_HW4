@@ -1,12 +1,22 @@
--- Start transaction
+-- Start transaction and reset tables
 BEGIN;
 
--- Insert data into phone_plan
+-- Clear existing data
+TRUNCATE phone_plan, bank_account, customer, call_record, bill, payment CASCADE;
+
+-- Reset sequences
+ALTER SEQUENCE phone_plan_id_seq RESTART WITH 1;
+ALTER SEQUENCE bank_account_id_seq RESTART WITH 1;
+ALTER SEQUENCE customer_id_seq RESTART WITH 1;
+ALTER SEQUENCE bill_id_seq RESTART WITH 1;
+ALTER SEQUENCE payment_id_seq RESTART WITH 1;
+
+-- Insert data into phone_plan first (since it's referenced by customer)
 INSERT INTO phone_plan (plan_type, monthly_charge, data_limit, talk_limit) VALUES
 ('Basic',    19.99, 1000,  500),
 ('Standard', 29.99, 3000, 1500),
 ('Premium',  49.99, 7000, 3500),
-('Unlimited',69.99, 10000, NULL),
+('Unlimited',69.99, 10000, 999999),
 ('Family',   39.99, 5000, 2500),
 ('Student',  24.99, 2000, 1000),
 ('Business',59.99, 8000, 4000),
@@ -14,7 +24,7 @@ INSERT INTO phone_plan (plan_type, monthly_charge, data_limit, talk_limit) VALUE
 ('Gaming',   54.99, 9000, 4500),
 ('Traveler',64.99, 8500, 4250);
 
--- Insert data into bank_account
+-- Insert data into bank_account (since it's referenced by customer)
 INSERT INTO bank_account (account_holder_name, bank_name, account_number, routing_number, balance) VALUES
 ('Alice Johnson', 'Bank of America', '1234567890', '111000025', 2500.75),
 ('Bob Smith', 'Chase Bank',      '2345678901', '021000021', 4800.50),
@@ -27,7 +37,7 @@ INSERT INTO bank_account (account_holder_name, bank_name, account_number, routin
 ('Ivy Taylor', 'BB&T',            '9012345678', '053000196', 5200.80),
 ('Jack Anderson', 'SunTrust',        '0123456789', '061000104', 3600.10);
 
--- Insert data into customer
+-- Now insert customers (after phone_plan and bank_account are populated)
 INSERT INTO customer (name, phone_number, email, address, phone_plan_id, bank_account_id) VALUES
 ('Alice Johnson',    '555-0101', 'alice.johnson@example.com', '123 Maple St, Springfield', 1,  1),
 ('Bob Smith',        '555-0102', 'bob.smith@example.com',     '456 Oak St, Springfield',   2,  2),
@@ -40,7 +50,7 @@ INSERT INTO customer (name, phone_number, email, address, phone_plan_id, bank_ac
 ('Ivy Taylor',       '555-0109', 'ivy.taylor@example.com',    '369 Aspen St, Springfield',9,  9),
 ('Jack Anderson',    '555-0110', 'jack.anderson@example.com', '159 Walnut St, Springfield',10,10);
 
--- Insert data into call_record
+-- Insert call records (after customer is populated)
 INSERT INTO call_record (call_start_time, call_end_time, call_duration, data_usage, cost, customer_id) VALUES
 ('2024-04-01 08:30:00', '2024-04-01 08:35:00',  300, 50, 2.50, 1),
 ('2024-04-02 09:15:00', '2024-04-02 09:18:20',  200, 30, 1.75, 2),
@@ -53,7 +63,7 @@ INSERT INTO call_record (call_start_time, call_end_time, call_duration, data_usa
 ('2024-04-09 16:50:00', '2024-04-09 16:57:40',  450, 65, 3.50, 9),
 ('2024-04-10 17:30:00', '2024-04-10 17:31:40',  100, 15, 0.80,10);
 
--- Insert data into bill
+-- Insert bills (after customer is populated)
 INSERT INTO bill (bill_date, total_amount, due_date, bill_status, customer_id) VALUES
 ('2024-04-01',  59.99, '2024-04-15', 'Paid',     1),
 ('2024-04-02',  89.99, '2024-04-16', 'Unpaid',   2),
@@ -66,7 +76,7 @@ INSERT INTO bill (bill_date, total_amount, due_date, bill_status, customer_id) V
 ('2024-04-09', 399.99, '2024-04-23', 'Paid',     9),
 ('2024-04-10', 449.99, '2024-04-24', 'Unpaid',  10);
 
--- Insert data into payment
+-- Insert payments (after bill and bank_account are populated)
 INSERT INTO payment (payment_method, payment_type, payment_date, payment_amount, bill_id, bank_account_id) VALUES
 ('Credit Card', 'Online',    '2024-04-14', 59.99, 1, 1),
 ('Debit Card',  'In-Person','2024-04-17', 89.99, 2, 2),

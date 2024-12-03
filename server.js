@@ -16,9 +16,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 const pool = new Pool({
     user: 'team19', // Ensure this matches your PostgreSQL user
     host: 'localhost',
-    database: 'cellphone', // Ensure this matches your PostgreSQL database
-    password: '1234', // Use environment variables for security in production
+    database: 'cellphone',
+    password: '1234',
     port: 5432,
+});
+
+// Set client to capture NOTICE messages
+pool.on('connect', (client) => {
+    client.query('SET client_min_messages TO NOTICE');
 });
 
 // Utility function to execute SQL files
@@ -72,17 +77,6 @@ app.get('/view-records', async (req, res) => {
     }
 });
 
-// Run transaction route
-app.get('/run-transaction', async (req, res) => {
-    try {
-        const filePath = path.join(__dirname, 'sql', 'transaction.sql');
-        await executeSQLFile(filePath);
-        res.json({ message: "Transaction executed successfully!" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error executing transaction.", error: error.message });
-    }
-});
 
 // Billing summary route
 app.get('/billing-summary', async (req, res) => {
@@ -113,7 +107,6 @@ app.get('/total-call-time-all', async (req, res) => {
     }
 });
 
-
 // Payment history route
 app.get('/payment-history', async (req, res) => {
     try {
@@ -123,6 +116,52 @@ app.get('/payment-history', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error fetching payment history.", error: error.message });
+    }
+});
+
+// Process transaction route
+app.post('/process-transaction', async (req, res) => {
+    const client = await pool.connect();
+    const startTime = Date.now();
+    
+    try {
+        
+        const filePath = path.join(__dirname, 'sql', 'transaction.sql');
+        const result = await executeSQLFile(filePath);
+
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+        
+        // Check for NOTICE messages in the result
+        const notices = result.length > 0 ? result[result.length - 1] : null;
+        const message = notices?.rows?.[0]?.message || 'Transaction processed successfully';
+        
+        res.json({
+            status: 'success',
+            message: message,
+            duration: duration,
+            details: notices?.rows?.[0] || {}
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error processing transaction:', error);
+        
+        // Format user-friendly error message
+        let errorMessage = error.message;
+        if (error.message.includes('No unpaid bills')) {
+            errorMessage = 'No unpaid bills to process.';
+        } else if (error.message.includes('Insufficient funds')) {
+            errorMessage = 'Insufficient funds in the bank account.';
+        }
+
+        
+        res.status(500).json({
+            status: 'error',
+            message: errorMessage,
+            duration: Date.now() - startTime
+        });
+    } finally {
+        client.release();
     }
 });
 

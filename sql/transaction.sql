@@ -1,48 +1,52 @@
 BEGIN;
 
--- Process all unpaid bills
 DO $$
 DECLARE
-    unpaid_bill RECORD;
-    customer RECORD;
-    bank_account RECORD;
+    v_bill_id INT;
+    v_customer_id INT;
+    v_bank_account_id INT;
+    v_total_amount DECIMAL(10,2);
+    v_balance DECIMAL(10,2);
 BEGIN
-    FOR unpaid_bill IN
-        SELECT * FROM bill WHERE bill_status = 'Unpaid' FOR UPDATE
-    LOOP
-        -- Get customer details
-        SELECT * INTO customer FROM customer WHERE customer_id = unpaid_bill.customer_id;
-        
-        -- Get and lock bank account
-        SELECT * INTO bank_account FROM bank_account b WHERE b.bank_account_id = customer.bank_account_id FOR UPDATE;
-        
-        -- Check for sufficient funds
-        IF bank_account.balance >= unpaid_bill.total_amount THEN
-            -- Deduct amount from bank account
-            UPDATE bank_account AS b
-            SET balance = b.balance - unpaid_bill.total_amount
-            WHERE b.bank_account_id = bank_account.bank_account_id;
-            
-            -- Update bill status to 'Paid'
-            UPDATE bill AS bl
-            SET bill_status = 'Paid'
-            WHERE bl.bill_id = unpaid_bill.bill_id;
-            
-            -- Insert payment record
-            INSERT INTO payment (
-                payment_method, payment_type, payment_date, payment_amount, bill_id, bank_account_id
-            ) VALUES (
-                'Bank Transfer', 'Automatic', CURRENT_DATE, unpaid_bill.total_amount, unpaid_bill.bill_id, bank_account.bank_account_id
-            );
-            
-            -- Success message
-            RAISE NOTICE 'Payment processed for customer %.', customer.name;
-        ELSE
-            -- Insufficient funds message
-            RAISE NOTICE 'Insufficient funds for customer %.', customer.name;
-        END IF;
-    END LOOP;
+    -- Get and lock an unpaid bill
+    SELECT bill_id, customer_id, total_amount 
+    INTO v_bill_id, v_customer_id, v_total_amount
+    FROM bill 
+    WHERE bill_status = 'Unpaid'
+    LIMIT 1
+    FOR UPDATE SKIP LOCKED;
+
+    -- Exit if no unpaid bill found
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'No unpaid bills to process.';
+    END IF;
+
+    -- Get and lock bank account info
+    SELECT ba.bank_account_id, ba.balance 
+    INTO v_bank_account_id, v_balance
+    FROM customer c
+    JOIN bank_account ba ON ba.bank_account_id = c.bank_account_id
+    WHERE c.customer_id = v_customer_id
+    FOR UPDATE;
+
+    -- Check if sufficient funds are available
+    IF v_balance < v_total_amount THEN
+        RAISE EXCEPTION 'Insufficient funds for bill %', v_bill_id;
+    END IF;
+
+    -- Deduct amount from bank account
+    UPDATE bank_account
+    SET balance = balance - v_total_amount
+    WHERE bank_account_id = v_bank_account_id;
+
+    -- Mark bill as paid
+    UPDATE bill
+    SET bill_status = 'Paid'
+    WHERE bill_id = v_bill_id;
+
+    -- Commit the transaction
+    RAISE NOTICE 'Transaction completed successfully for bill %', v_bill_id;
 END $$;
 
--- Commit transaction
+-- Commit the transaction
 COMMIT;

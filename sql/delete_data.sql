@@ -3,16 +3,17 @@
 -- Start a transaction to ensure all deletions are atomic
 BEGIN;
 
--- Truncate all tables to remove all data
-TRUNCATE TABLE payment CASCADE;
-TRUNCATE TABLE bill CASCADE;
-TRUNCATE TABLE call_record CASCADE;
-TRUNCATE TABLE customer CASCADE;
-TRUNCATE TABLE bank_account CASCADE;
-TRUNCATE TABLE phone_plan CASCADE;
-
-
+-- Drop existing tables
+DROP TABLE IF EXISTS payment CASCADE;
+DROP TABLE IF EXISTS bill CASCADE;
+DROP TABLE IF EXISTS call_record CASCADE;
+DROP TABLE IF EXISTS customer CASCADE;
+DROP TABLE IF EXISTS bank_account CASCADE;
+DROP TABLE IF EXISTS phone_plan CASCADE;
+DROP TABLE IF EXISTS address CASCADE;
+DROP TABLE IF EXISTS customer_service CASCADE;
+DROP TABLE IF EXISTS phone_warranty CASCADE;
+DROP TABLE IF EXISTS service_range CASCADE;
 
 -- Commit the transaction
 COMMIT;
-

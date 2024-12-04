@@ -30,7 +30,7 @@ CREATE TABLE phone_plan (
     plan_type VARCHAR(50) NOT NULL,
     monthly_charge DECIMAL(10, 2) NOT NULL,
     data_limit INT NOT NULL,
-    talk_limit INT NULL
+    talk_limit INT NOT NULL
 );
 
 --Bank Account Table
@@ -52,19 +52,19 @@ CREATE TABLE customer (
     phone_plan_id INT NOT NULL,
     bank_account_id INT NOT NULL,
     FOREIGN KEY (phone_plan_id) REFERENCES phone_plan(phone_plan_id),
-    FOREIGN KEY (bank_account_id) REFERENCES bank_account(bank_account_id)
+    FOREIGN KEY (bank_account_id) REFERENCES bank_account(bank_account_id) ON DELETE CASCADE
 );
 
 --Call Record Table
 CREATE TABLE call_record (
-    call_start_time DATETIME NOT NULL,
-    call_end_time DATETIME NOT NULL,
+    call_start_time DATE NOT NULL,
+    call_end_time DATE NOT NULL,
     call_duration INT NOT NULL,
     data_usage INT NOT NULL,
     cost DECIMAL(10, 2) NOT NULL,
     customer_id INT NOT NULL,
     PRIMARY KEY (customer_id, call_start_time),
-    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
 );
 
 --Phone Bill Table
@@ -75,7 +75,7 @@ CREATE TABLE bill (
     due_date DATE NOT NULL,
     bill_status VARCHAR(20) NOT NULL,
     customer_id INT NOT NULL,
-    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
 );
 
 --Payment Table
@@ -87,8 +87,8 @@ CREATE TABLE payment (
     bill_id INT NOT NULL,
     bank_account_id INT NOT NULL,
     PRIMARY KEY (payment_date, bill_id, bank_account_id),
-    FOREIGN KEY (bill_id) REFERENCES bill(bill_id),
-    FOREIGN KEY (bank_account_id) REFERENCES bank_account(bank_account_id)
+    FOREIGN KEY (bill_id) REFERENCES bill(bill_id) ON DELETE CASCADE,
+    FOREIGN KEY (bank_account_id) REFERENCES bank_account(bank_account_id) ON DELETE CASCADE
 );
 
 -- Address Table
@@ -99,7 +99,7 @@ CREATE TABLE address (
     city VARCHAR(255) NOT NULL,
     state VARCHAR(50) NOT NULL,
     zip_code VARCHAR(20) NOT NULL,
-    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
 );
 
 -- Customer Service Table
@@ -109,7 +109,7 @@ CREATE TABLE customer_service (
     service_date DATE NOT NULL,
     issue_description TEXT NOT NULL,
     resolution_description TEXT,
-    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
 );
 
 -- Phone Warranty Table
@@ -119,7 +119,7 @@ CREATE TABLE phone_warranty (
     warranty_start_date DATE NOT NULL,
     warranty_end_date DATE NOT NULL,
     warranty_status VARCHAR(50) NOT NULL,
-    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
 );
 
 -- Service Range Table
@@ -128,9 +128,11 @@ CREATE TABLE service_range (
     customer_id INT NOT NULL,
     region_name VARCHAR(255) NOT NULL,
     coverage_area VARCHAR(255) NOT NULL,
-    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
 );
 
+-- Commit transaction
+COMMIT;
 -- Relationship from customer to phone plan: Many-to-One
 -- Each customer can have only one phone plan, but multiple customers can have the same phone plan this is reinforced by the phone_plan_id foreign key in the customer table.
 

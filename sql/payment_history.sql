@@ -1,6 +1,7 @@
 -- sql/payment_history.sql
 SELECT 
-    p.payment_id, 
+    p.payment_method,
+    p.payment_type,
     p.payment_date, 
     p.payment_amount, 
     ba.bank_name, 

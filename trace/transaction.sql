@@ -1,47 +1,53 @@
--- Begin transaction
 BEGIN;
 
--- Select an unpaid bill and lock it for update
-DO $$ 
+DO $$
 DECLARE
-    v_unpaid_bill RECORD;
-    v_customer RECORD;
-    v_bank_account RECORD;
+    v_bill_id INT;
+    v_customer_id INT;
+    v_bank_account_id INT;
+    v_total_amount DECIMAL(10,2);
+    v_balance DECIMAL(10,2);
 BEGIN
-    -- Select unpaid bill
-    SELECT * INTO v_unpaid_bill FROM bill WHERE bill_status = 'Unpaid' LIMIT 1 FOR UPDATE;
+    -- Get and lock an unpaid bill
+    SELECT bill_id, customer_id, total_amount 
+    INTO v_bill_id, v_customer_id, v_total_amount
+    FROM bill 
+    WHERE bill_status = 'Unpaid'
+    LIMIT 1
+    FOR UPDATE SKIP LOCKED;
 
-    -- Check if an unpaid bill was found
+    -- Exit if no unpaid bill found
     IF NOT FOUND THEN
-        RAISE NOTICE 'No unpaid bills found.';
-        RETURN;
+        RAISE EXCEPTION 'No unpaid bills to process.';
     END IF;
 
-    -- Select the customer associated with the bill
-    SELECT * INTO v_customer FROM customer WHERE customer_id = v_unpaid_bill.customer_id;
+    -- Get and lock bank account info
+    SELECT ba.bank_account_id, ba.balance 
+    INTO v_bank_account_id, v_balance
+    FROM customer c
+    JOIN bank_account ba ON ba.bank_account_id = c.bank_account_id
+    WHERE c.customer_id = v_customer_id
+    FOR UPDATE;
 
-    -- Select and lock the customer's bank account for update
-    SELECT * INTO v_bank_account FROM bank_account WHERE bank_account_id = v_customer.bank_account_id FOR UPDATE;
-
-    -- Check if the bank account has sufficient balance
-    IF v_bank_account.balance < v_unpaid_bill.total_amount THEN
-        RAISE EXCEPTION 'Insufficient funds in bank account for customer %.', v_customer.name;
+    -- Check if sufficient funds are available
+    IF v_balance < v_total_amount THEN
+        RAISE EXCEPTION 'Insufficient funds for bill %', v_bill_id;
     END IF;
 
-    -- Deduct the amount from the bank account
+    -- Deduct amount from bank account
     UPDATE bank_account
-    SET balance = balance - v_unpaid_bill.total_amount
-    WHERE bank_account_id = v_bank_account.bank_account_id;
+    SET balance = balance - v_total_amount
+    WHERE bank_account_id = v_bank_account_id;
 
-    -- Update the bill status to 'Paid'
+    -- Mark bill as paid
     UPDATE bill
     SET bill_status = 'Paid'
-    WHERE bill_id = v_unpaid_bill.bill_id;
-    
-    -- Optional: Provide a success message
-    RAISE NOTICE 'Payment processed for customer %.', v_customer.name;
-    
+    WHERE bill_id = v_bill_id;
+
+    -- Commit the transaction
+    RAISE NOTICE 'Transaction completed successfully for bill %', v_bill_id;
 END $$;
 
--- Commit transaction
+-- Commit the transaction
 COMMIT;
+

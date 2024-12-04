@@ -10,7 +10,8 @@
 
 # Cell Company Web App
 
-Our project is a web app for a database of a phone company that tracks the specifics of basic phone plans from the company's perspective. We are able to add a customer with an existing bank account into our database with a select phone plan that is offered. This data can also be deleted from our database. Payment history and bill summaries for customers can be found as well. Along with many other actions of a cell phone company system.
+Our web app project is designed for efficient management of a cell phone company's customer data and operations. It allows users to create, populate, and delete database tables for customer records, phone plans, and payment details. Users can view detailed records, including customer profiles, billing summaries, total call durations, and payment histories, enabling comprehensive data insights. The app supports transaction simulations, such as bill payments and plan changes, to streamline operations. With features like billing summary generation and real-time transaction handling, the platform enhances operational efficiency and improves the overall customer experience.
+
 
 
 ## Quick Start
@@ -117,27 +118,89 @@ CREATE TABLE payment (
 ~~~
 Payment surrounds the payment of the bill considering the amount, the method of payment, and if it was pre/post-paid
 
-
-
-Relationships:
 ~~~
--- Relationship from customer to phone plan: Many-to-One
--- Each customer can have only one phone plan, but multiple customers can have the same phone plan this is reinforced by the phone_plan_id foreign key in the customer table.
+-- Address Table
+CREATE TABLE address (
+    address_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    street_address VARCHAR(255) NOT NULL,
+    city VARCHAR(255) NOT NULL,
+    state VARCHAR(50) NOT NULL,
+    zip_code VARCHAR(20) NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
+);
+~~~
+Holds customer address details, including street address, city, state, and zip code.
+~~~
 
--- Relationship from customer to bank account: One-to-One
--- Each customer can have only one bank account, and each bank account belongs to one customer this is reinforced by the bank_account_id foreign key in the customer table.
+-- Customer Service Table
+CREATE TABLE customer_service (
+    service_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    service_date DATE NOT NULL,
+    issue_description TEXT NOT NULL,
+    resolution_description TEXT,
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
+);
+~~~
+Logs customer service interactions, including service date, issue description, and resolution details.
+~~~
 
--- Relationship from customer to call record: One-to-Many
--- Each customer can have multiple call records, but each call record belongs to one customer this is reinforced by the customer_id foreign key in the call_record table.
+-- Phone Warranty Table
+CREATE TABLE phone_warranty (
+    warranty_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    warranty_start_date DATE NOT NULL,
+    warranty_end_date DATE NOT NULL,
+    warranty_status VARCHAR(50) NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
+);
+~~~
+Stores warranty details for customers, including warranty period and status.
+~~~
 
--- Relationship from customer to bill: One-to-Many
--- Each customer can have multiple bills, but each bill belongs to one customer this is reinforced by the customer_id foreign key in the bill table.
+-- Service Range Table
+CREATE TABLE service_range (
+    range_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    region_name VARCHAR(255) NOT NULL,
+    coverage_area VARCHAR(255) NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
+);
+~~~
+Defines service coverage areas for customers, including region and coverage area.
 
--- Relationship from payment to bill: One-to-One
--- Each payment is associated with one bill, and each bill is associated with one payment this is reinforced by the bill_id foreign key in the payment table.
 
--- Relationship from payment to bank account: Many-to-One
--- Each payment is made from one bank account, but multiple payments can be made from the same bank account this is reinforced by the bank_account_id foreign key in the payment table.
+### Relationships:
+
+~~~
+Customer → Phone Plan (One-to-Many)
+Customer → Bank Account (One-to-Many)
+Customer → Call Record (One-to-Many)
+Customer → Bill (One-to-Many)
+Customer → Address (One-to-Many)
+Customer → Customer Service (One-to-Many)
+Customer → Phone Warranty (One-to-Many)
+Customer → Service Range (One-to-Many)
+
+Call Record → Customer (Many-to-One)
+
+Bill → Customer (Many-to-One)
+Bill → Payment (One-to-Many)
+
+Payment → Bill (Many-to-One)
+Payment → Bank Account (Many-to-One)
+
+Address → Customer (Many-to-One)
+
+Customer Service → Customer (Many-to-One)
+
+Phone Warranty → Customer (Many-to-One)
+
+Service Range → Customer (Many-to-One)
+
+Bank Account → Customer (One-to-Many)
+Bank Account → Payment (One-to-Many)
 ~~~
 
 ### Transaction
@@ -145,52 +208,57 @@ Relationships:
 This transaction query handles the process of paying a customer's unpaid bill. Firstly by declaring an unpaid bill and locking its respective bank account for update. Then check the balance to see if the funds are sufficient enough to pay the bill. If yes, it deducts the funds from the account and sets the bill status to 'Paid' from unpaid. Followed by a payment processed statement. If funds are less than the bill total, there will be an insufficient funds in bank account statement.
 
 ~~~
--- Begin transaction
 BEGIN;
 
--- Select an unpaid bill and lock it for update
-DO $$ 
+DO $$
 DECLARE
-    v_unpaid_bill RECORD;
-    v_customer RECORD;
-    v_bank_account RECORD;
+    v_bill_id INT;
+    v_customer_id INT;
+    v_bank_account_id INT;
+    v_total_amount DECIMAL(10,2);
+    v_balance DECIMAL(10,2);
 BEGIN
-    -- Select unpaid bill
-    SELECT * INTO v_unpaid_bill FROM bill WHERE bill_status = 'Unpaid' LIMIT 1 FOR UPDATE;
+    -- Get and lock an unpaid bill
+    SELECT bill_id, customer_id, total_amount 
+    INTO v_bill_id, v_customer_id, v_total_amount
+    FROM bill 
+    WHERE bill_status = 'Unpaid'
+    LIMIT 1
+    FOR UPDATE SKIP LOCKED;
 
-    -- Check if an unpaid bill was found
+    -- Exit if no unpaid bill found
     IF NOT FOUND THEN
-        RAISE NOTICE 'No unpaid bills found.';
-        RETURN;
+        RAISE EXCEPTION 'No unpaid bills to process.';
     END IF;
 
-    -- Select the customer associated with the bill
-    SELECT * INTO v_customer FROM customer WHERE customer_id = v_unpaid_bill.customer_id;
+    -- Get and lock bank account info
+    SELECT ba.bank_account_id, ba.balance 
+    INTO v_bank_account_id, v_balance
+    FROM customer c
+    JOIN bank_account ba ON ba.bank_account_id = c.bank_account_id
+    WHERE c.customer_id = v_customer_id
+    FOR UPDATE;
 
-    -- Select and lock the customer's bank account for update
-    SELECT * INTO v_bank_account FROM bank_account WHERE bank_account_id = v_customer.bank_account_id FOR UPDATE;
-
-    -- Check if the bank account has sufficient balance
-    IF v_bank_account.balance < v_unpaid_bill.total_amount THEN
-        RAISE EXCEPTION 'Insufficient funds in bank account for customer %.', v_customer.name;
+    -- Check if sufficient funds are available
+    IF v_balance < v_total_amount THEN
+        RAISE EXCEPTION 'Insufficient funds for bill %', v_bill_id;
     END IF;
 
-    -- Deduct the amount from the bank account
+    -- Deduct amount from bank account
     UPDATE bank_account
-    SET balance = balance - v_unpaid_bill.total_amount
-    WHERE bank_account_id = v_bank_account.bank_account_id;
+    SET balance = balance - v_total_amount
+    WHERE bank_account_id = v_bank_account_id;
 
-    -- Update the bill status to 'Paid'
+    -- Mark bill as paid
     UPDATE bill
     SET bill_status = 'Paid'
-    WHERE bill_id = v_unpaid_bill.bill_id;
-    
-    -- Optional: Provide a success message
-    RAISE NOTICE 'Payment processed for customer %.', v_customer.name;
-    
+    WHERE bill_id = v_bill_id;
+
+    -- Commit the transaction
+    RAISE NOTICE 'Transaction completed successfully for bill %', v_bill_id;
 END $$;
 
--- Commit transaction
+-- Commit the transaction
 COMMIT;
 ~~~
 
